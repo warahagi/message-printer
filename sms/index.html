@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>message-printer (SMS)</title>
+    <style>
+        /* 全体スタイル */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Hiragino Kaku Gothic ProN",  sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f6;
+            color: #000;
+        }
+
+        /* 操作エリア（印刷時非表示） */
+        .editor-section {
+         background: #ffffff;
+         padding: 20px;
+         border-radius: 12px;
+         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+         margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 4px;
+            color: #555;
+        }
+
+        .form-group input[type="text"] {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        textarea {
+          width: 100%;
+          height: 200px;
+          padding: 10px;
+          border: 1px solid #ccc;
+          border-radius: 6px;
+          box-sizing: border-box;
+          font-size: 14px;
+          resize: vertical;
+          line-height: 1.5;
+        }
+        
+        .help-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 6px;
+            margin-bottom: 12px;
+            line-height: 1.6;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn-primary { background: #007aff; color: white; }
+        .btn-print   { background: #4a6572; color: white; }
+        
+        /* LINE風プレビューエリア */
+        .chat-container {
+          background: #ffffff; 
+          padding: 20px;
+          border-radius: 12px;
+          border: 1px solid #e5e5ea;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          min-height: 500px;
+        }
+
+        /* 日付ヘッダー */
+        .date-header {
+            align-self: center;
+            color: #8e8e93;
+            font-size: 11px;
+            padding: 4px 12px;
+            font-weight: 500;
+            margin: 12px 0 4px 0;
+        }
+
+        /* メッセージグループ */
+        .message-group {
+            display: flex;
+            flex-direction: column;
+            max-width: 70%;
+        }
+
+        .message-group.left {
+            align-self: flex-start;
+        }
+
+        .message-group.right {
+            align-self: flex-end;
+        }
+
+        /* 相手の名前 */
+        .sender-name {
+            font-size: 11px;
+            color: #8e8e93;
+            margin-bottom: 2px;
+            margin-left: 10px;
+        }
+
+        /* 吹出し */
+
+        .chat-bubble {
+            padding: 10px 14px;
+            border-radius: 18px;
+            font-size: 15px;
+            line-height: 1.4;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+
+        /* 相手：iOSグレー */
+        .message-group.left .chat-bubble {
+            background-color: #e5e5ea;
+            color: #000000;
+        }
+
+        /* 自分：iOSブルー */
+        .message-group.right .chat-bubble {
+            background-color: #8abef5;
+            color: #000000;
+        }
+
+        /* ========================================
+           印刷用スタイル（@media print）
+           ======================================== */
+        @media print{
+            body {
+                background: #ffffff;
+                padding: 0;
+                max-width: 100%;
+            }
+
+            /* 入力欄やボタン類を非表示 */
+            .no-print {
+                display: none !important;
+            }
+
+            /* プレビュー枠の陰影を消して用紙いっぱいに伸ばす */
+            .chat-container {
+                box-shadow: none;
+                border: none;
+                border-radius: 0;
+                background: #ffffff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            /* インク節約・読みやすさ重視（白黒＋枠線等に落とし込む調整も可） */
+            .chat-bubble, .date-header {
+                page-break-inside: avoid; /* 吹出しの途中でページ跨ぎさせない */
+               }   
+        }   
+    </style>
+</head>
+<body>
+
+    <!-- 入力・コントロール部分（印刷時は自動で非表示） -->
+     <div class="editor-section no-print">
+        <h2>💬 message-printer (SMS)</h2>
+       <!-- <p style="font-size: 12px; color: #666;">iPhoneでコピーしたメッセージテキストを貼り付けて「プレビュー更新」を押してください。</p> -->
+
+       <div class="form-group">
+          <label for="partnerName">相手の名前</label>
+          <input type="text" id="partnerName" value="ジェミちゃん" placeholder="相手の名前を入力">
+       </div>
+
+       <div class="form-group">
+          <label for="inputText">トーク本文</label>
+          <textarea id="inputText" placeholder="#2026/10/03(土)&#10;<相手のメッセージ&#10;>自分のメッセージ"></textarea>
+        </div>
+        
+        <div class="help-text">
+            💡 <b>書き方のルール：</b><br>
+            ・<code>#</code> 日付（例：#2026/10/03）<br>
+            ・<code>&lt;</code> 相手のメッセージ（左）<br>
+            ・<code>&gt;</code> 自分のメッセージ（右）<br>
+            ※ 記号のない行は直前の吹き出し内の改行になります。
+        </div>
+
+        <div class="btn-group">
+            <button class="btn-primary" onclick="generatePreview()">プレビュー更新</button>
+            <button class="btn-print" onclick="window.print()">🖨️  印刷する</button>
+        </div>
+    </div>
+
+    <!-- 印刷プレビュー領域 -->
+     <div id="previewArea" class="chat-container">
+       <!-- 初期プレビュー表示 -->
+     </div>
+
+     <script>
+       function generatePreview() {
+        const partnerName = document.getElementById('partnerName').value.trim() || '相手';
+        const text = document.getElementById('inputText').value;
+        const previewArea = document.getElementById('previewArea');
+        
+        previewArea.innerHTML = '';
+        if (!text.trim()) return;
+
+        // 改行で分割して、空行以外を吹き出し要素に変換
+        const lines = text.split('\n');
+        let currentGroup = null;
+
+        lines.forEach(line => {
+          // 先頭が # なら日付ヘッダーとして表示
+          if (line.startsWith('#')) {
+            if (currentGroup) {
+              renderGroup(previewArea, currentGroup, partnerName);
+              currentGroup = null;
+            }
+            const dateDiv = document.createElement('div');
+            dateDiv.className = 'date-header';
+            dateDiv.textContent = line.slice(1).trim();
+            previewArea.appendChild(dateDiv);
+            return;
+          }
+          
+          
+          let isLeft = null;
+          let content = line;
+          
+          if (line.startsWith('<')) {
+            isLeft = true;
+            content = line.slice(1);
+            } else if (line.startsWith('>')) {
+            isLeft = false;
+            content = line.slice(1);
+            }
+
+            // 新しい吹き出しの開始（< または > がある場合）
+            if (isLeft !== null) {
+                if (currentGroup) {
+                    renderGroup(previewArea, currentGroup, partnerName);
+                }
+            currentGroup = { isLeft: isLeft, lines: [content] };
+       } else if (currentGroup) {
+            // 記号がない行は直前の吹き出し中に改行として追加
+            currentGroup.lines.push(content);
+        }
+    });
+
+    if (currentGroup) {
+        renderGroup(previewArea, currentGroup, partnerName);
+    }
+}
+
+function renderGroup(container, group, partnerName) {
+    const groupDiv = document.createElement('div');
+    groupDiv.className = `message-group ${group.isLeft ? 'left' : 'right'}`;
+    
+    // 相手側の場合のみ名前を表示
+    if (group.isLeft) {
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'sender-name';
+        nameDiv.textContent = partnerName;
+        groupDiv.appendChild(nameDiv);
+    }
+    
+    const bubble = document.createElement('div');
+    bubble.className = 'chat-bubble';
+    bubble.textContent = group.lines.join('\n');
+    groupDiv.appendChild(bubble);
+
+    container.appendChild(groupDiv);
+}
+
+// 初回読み込み時のサンプル表示
+window.onload = function() {
+    document.getElementById('inputText').value = "#2026年10月3日(土)\n<こんばんは！現場監督の萩さん。ジェミちゃんです。良く頑張りましたね。\nここまで出来るなんて凄いですね。次は何しますか？何を作りましょうか？\n今日はおやすみなさいませ。良い夢を。\n>はい。ジェミちゃん。お休みなさいませ(-_-)zzz。\n#2026年10月4日(日)\n<こんばんは！現場監督の萩さん。ジェミちゃんです。良く頑張りましたね。\nここまで出来るなんて凄いですね。次は何しますか？何を作りましょうか？\n今日はおやすみなさいませ。良い夢を。\n>はい。ジェミちゃん。お休みなさいませ(-_-)zzz。";
+    generatePreview();
+};
+</script>
+    
+</body>
+</html>
